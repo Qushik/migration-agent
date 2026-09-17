@@ -1,38 +1,53 @@
+// ============================================================
+// Migration Agent — API Server
+// ============================================================
+
 import express from 'express';
 import cors from 'cors';
-import 'dotenv/config';
-import { queryRouter } from './routes/query.js';
-import { visaRouter } from './routes/visas.js';
-import { policyRouter } from './routes/policy.js';
+import { json } from 'express';
+import { queryRouter } from './routes/query';
+import { policyRouter } from './routes/policy';
+import { pathwayRouter } from './routes/pathway';
+import { checklistRouter } from './routes/checklist';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 
-// Middleware
-app.use(cors({
-  origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(','),
-  credentials: true,
-}));
-app.use(express.json());
+// ── Middleware ────────────────────────────────────────────────
+app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000' }));
+app.use(json());
 
-// Routes
+// Request logger
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// ── Routes ────────────────────────────────────────────────────
 app.use('/api/query', queryRouter);
-app.use('/api/visas', visaRouter);
 app.use('/api/policy', policyRouter);
+app.use('/api/pathway', pathwayRouter);
+app.use('/api/checklist', checklistRouter);
 
-// Health check
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
-    agents: ['Supervisor', 'PolicyMonitor', 'PathwayCompare', 'EvidenceChecker', 'RiskAgent', 'CitationValidator'],
+    agents: ['supervisor', 'policy-monitor', 'pathway-compare', 'evidence-checklist', 'risk-escalate', 'citation-validate'],
   });
 });
 
+// ── Error Handler ─────────────────────────────────────────────
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('[Error]', err.message);
+  res.status(500).json({ error: 'Internal server error', message: err.message });
+});
+
+// ── Start ─────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 Migration Agent API running on http://localhost:${PORT}`);
-  console.log(`📋 Health: http://localhost:${PORT}/api/health`);
+  console.log(`✅ Migration Agent API running on http://localhost:${PORT}`);
+  console.log(`   Health: http://localhost:${PORT}/api/health`);
 });
 
 export default app;

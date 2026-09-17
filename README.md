@@ -1,216 +1,124 @@
 # 🇦🇺 Migration Intelligence Agent
 
-> AI-powered Australian migration policy platform with a **supervisor + subagent** architecture.
-
-[![CI](https://github.com/Qushik/migration-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Qushik/migration-agent/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
-
-## Overview
-
-This monorepo contains a multi-agent system designed to:
-
-- 📋 **Monitor** Australian migration policy changes in real-time
-- 🗺️ **Compare** visa pathways with pros/cons analysis
-- 📄 **Generate** evidence checklists for each visa subclass
-- ⚠️ **Assess risk** and flag cases requiring human review
-- 📎 **Validate citations** against official Home Affairs sources
-
-> **Disclaimer**: This tool provides information only. It is not legal advice and does not replace a registered migration agent (MARA). Always consult a registered professional for complex cases.
-
----
+A production-grade multi-agent system for Australian migration policy analysis. One **supervisor agent** orchestrates five specialised **subagents** to answer complex migration questions with cited, up-to-date policy intelligence.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Supervisor Agent                   │
-│         (orchestrates all subagents below)           │
-└────────┬──────────┬───────────┬──────────┬──────────┘
-         │          │           │          │
-    ┌────▼───┐ ┌────▼───┐ ┌────▼───┐ ┌───▼────┐
-    │Policy  │ │Pathway │ │Evidence│ │  Risk  │
-    │Monitor │ │Compare │ │Checker │ │ Agent  │
-    └────────┘ └────────┘ └────────┘ └────────┘
-                                          │
-                                    ┌─────▼──────┐
-                                    │ Citation   │
-                                    │ Validator  │
-                                    └────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   SUPERVISOR AGENT                       │
+│         Receives user query → plans tasks →             │
+│         delegates to subagents → synthesises response   │
+└────┬──────────┬──────────┬──────────┬──────────┬────────┘
+     │          │          │          │          │
+  POLICY    PATHWAY    EVIDENCE    RISK &    CITATION
+  MONITOR   COMPARE   CHECKLIST  ESCALATE   VALIDATE
 ```
 
----
+### Subagents
 
-## Monorepo Structure
+| Agent | Role |
+|-------|------|
+| `policy-monitor` | Watches Home Affairs, MARA, legislation for changes |
+| `pathway-compare` | Compares visa subclasses, pros/cons, eligibility |
+| `evidence-checklist` | Generates document checklists per visa/profile |
+| `risk-escalate` | Flags refusal risks, red flags, escalates to human |
+| `citation-validate` | Verifies every policy claim against official sources |
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy environment variables
+cp .env.example .env
+# Edit .env — add your OPENAI_API_KEY
+
+# 3. Run the API
+npm run dev:api
+
+# 4. Run the web UI (separate terminal)
+npm run dev:web
+
+# 5. Open http://localhost:3000
+```
+
+## Project Structure
 
 ```
 migration-agent/
 ├── apps/
 │   ├── api/                  # Express orchestration API
 │   │   ├── src/
-│   │   │   ├── index.ts
-│   │   │   ├── routes/
-│   │   │   └── middleware/
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   └── web/                  # React frontend (Vite)
-│       ├── src/
-│       │   ├── main.tsx
-│       │   ├── App.tsx
-│       │   └── components/
-│       ├── index.html
-│       ├── package.json
-│       └── vite.config.ts
-├── packages/
-│   ├── agents/               # Supervisor + all subagents
-│   │   ├── src/
-│   │   │   ├── supervisor.ts
-│   │   │   ├── subagents/
-│   │   │   │   ├── policyMonitor.ts
-│   │   │   │   ├── pathwayCompare.ts
-│   │   │   │   ├── evidenceChecker.ts
-│   │   │   │   ├── riskAgent.ts
-│   │   │   │   └── citationValidator.ts
-│   │   │   └── types.ts
+│   │   │   ├── index.ts      # Server entry point
+│   │   │   ├── routes/       # API routes
+│   │   │   └── middleware/   # Auth, logging, error handling
 │   │   └── package.json
-│   └── shared/               # Shared schemas, constants, utils
-│       ├── src/
-│       │   ├── visaTypes.ts
-│       │   ├── policySchema.ts
-│       │   └── constants.ts
+│   └── web/                  # Next.js web UI
+│       ├── src/app/          # App router pages
 │       └── package.json
+├── packages/
+│   ├── agents/               # All agent logic
+│   │   ├── supervisor.ts     # Orchestrator
+│   │   ├── policy-monitor.ts
+│   │   ├── pathway-compare.ts
+│   │   ├── evidence-checklist.ts
+│   │   ├── risk-escalate.ts
+│   │   └── citation-validate.ts
+│   └── shared/               # Shared types, schemas, constants
+│       ├── types.ts
+│       ├── schemas.ts
+│       ├── visa-data.ts      # Australian visa subclass data
+│       └── policy-sources.ts # Official source registry
 ├── docs/
-│   ├── architecture.md
-│   ├── agents.md
-│   └── setup.md
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── package.json              # Root workspace
-└── tsconfig.base.json
+│   ├── ARCHITECTURE.md
+│   ├── AGENT-PROMPTS.md
+│   └── DEPLOYMENT.md
+├── .github/workflows/ci.yml
+├── .env.example
+└── package.json
 ```
 
----
+## Environment Variables
 
-## Quick Start
-
-### Prerequisites
-
-- Node.js >= 20
-- npm >= 10
-- OpenAI API key (or compatible LLM provider)
-
-### Installation
-
-```bash
-git clone https://github.com/Qushik/migration-agent.git
-cd migration-agent
-npm install
+```env
+OPENAI_API_KEY=sk-...          # Required: OpenAI GPT-4o
+ANTHROPIC_API_KEY=...          # Optional: Claude fallback
+SERPAPI_KEY=...                # Optional: live web search
+PORT=3001                      # API port
+WEB_PORT=3000                  # Web UI port
 ```
-
-### Environment Setup
-
-```bash
-cp apps/api/.env.example apps/api/.env
-# Edit .env and add your API keys
-```
-
-### Run Development
-
-```bash
-# Start API server
-npm run dev:api
-
-# Start web frontend (in another terminal)
-npm run dev:web
-
-# Run both concurrently
-npm run dev
-```
-
-### Build
-
-```bash
-npm run build
-```
-
-### Test
-
-```bash
-npm run test
-```
-
----
-
-## Key Features
-
-### Supervisor Agent
-Orchestrates task routing — receives a user query, decides which subagents to invoke, aggregates their outputs, and returns a structured response with citations.
-
-### Policy Monitor Subagent
-Tracks changes to Australian Home Affairs policy, MARA regulatory instruments, visa application charges, and threshold changes (e.g. TSMIT at $79,423 from 1 July 2026).
-
-### Pathway Compare Subagent
-Analyses and compares visa subclasses based on the user's profile — skilled, employer-sponsored, partner, student, visitor. Produces a structured pros/cons matrix.
-
-### Evidence Checker Subagent
-Generates a checklist of required documents and evidence for a nominated visa subclass, including common pitfalls and refusal triggers.
-
-### Risk Agent Subagent
-Assesses case-level risk factors — character issues, overstay history, no-further-stay conditions, student restrictions (from September 2026), and flags cases for human escalation.
-
-### Citation Validator Subagent
-Ensures all policy claims are backed by a dated official source. Flags stale information (>90 days old for rapidly changing policy areas).
-
----
 
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/query` | Main query endpoint — supervisor routes to subagents |
-| `GET` | `/api/visas` | List all supported visa subclasses |
-| `GET` | `/api/visas/:subclass` | Get details + pros/cons for a visa subclass |
-| `POST` | `/api/checklist` | Generate evidence checklist |
-| `POST` | `/api/risk` | Assess risk for a given profile |
-| `GET` | `/api/policy/changes` | Recent policy change digest |
-| `GET` | `/api/health` | Health check |
+| POST | `/api/query` | Send a migration question to the supervisor |
+| GET | `/api/policy/updates` | Latest policy changes |
+| POST | `/api/pathway/compare` | Compare visa pathways |
+| POST | `/api/checklist` | Generate evidence checklist |
+| GET | `/api/health` | Health check |
 
----
+## Example Query
 
-## Policy Coverage (Australia, 2026)
+```bash
+curl -X POST http://localhost:3001/api/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "question": "Can a 482 TSS holder transition to permanent residence in 2026?",
+    "context": { "occupation": "Software Engineer", "years_in_australia": 3 }
+  }'
+```
 
-- 2026–27 Permanent Migration Program: 185,000 places
-- Skilled stream: 132,200 places (70.4%)
-- Employer Sponsored: 58,040 places
-- TSMIT: $79,423 (from 1 July 2026)
-- Student visa base charge: $2,500 (from 1 July 2026)
-- MARA regulatory framework updated 1 April 2026
-- Student dependant restrictions (announced September 2026)
-- Overstayer enforcement strengthened (September 2026)
-- Visitor visa "no further stay" conditions expanded
+## Legal Disclaimer
 
----
-
-## Roadmap
-
-- [ ] Vector database integration (pgvector / Pinecone) for policy retrieval
-- [ ] Automated daily policy diff from Home Affairs RSS and legislation.gov.au
-- [ ] MARA-registered agent handoff workflow
-- [ ] Occupation-specific ANZSCO scoring
-- [ ] State nomination tracking (190/491)
-- [ ] Processing time estimator
-- [ ] Multi-language support
-
----
+> This system provides **general migration information only** and is **not registered migration advice**. Always consult a MARA-registered migration agent for personalised advice. Policy information is sourced from official Australian Government publications and is subject to change.
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first.
-
----
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md). PRs welcome.
 
 ## License
 
-MIT © 2026 Qushik Ahmed Apu
+MIT — see [LICENSE](LICENSE)
