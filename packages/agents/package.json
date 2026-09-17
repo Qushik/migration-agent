@@ -1,0 +1,14 @@
+{
+  "name": "@migration-agent/agents",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@migration-agent/shared": "*",
+    "openai": "^4.52.0",
+    "zod": "^3.23.8"
+  }
+}
